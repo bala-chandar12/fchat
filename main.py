@@ -116,15 +116,17 @@ conversation = LLMChain(
 def res():
     memory.clear()
 def predict(que):
-    k= conversation.predict(question=que)
+    k = conversation.predict(question=que)
     print(k)
     lines = k.split('\n')
-    chatbot_value=k
+    chatbot_value = k  # Default to the full response if 'AI:' is not found
     for line in lines:
         if 'AI:' in line:
-            # Extracting the value after 'Chatbot:' by removing the 'Chatbot: ' part
-            chatbot_value = line.split('AI: ')[1].strip()
-            print(chatbot_value)
+            # Extracting the value after 'AI:' by removing the 'AI: ' part
+            parts = line.split('AI: ', 1)
+            if len(parts) > 1:
+                chatbot_value = parts[1].strip()
+                print(chatbot_value)
     return chatbot_value
 #k=predict("when USA got independence")
 #print(k)
