@@ -120,14 +120,15 @@ def predict(que):
     print(k)
     lines = k.split('\n')
     chatbot_value = k  # Default to the full response if 'AI:' is not found
-    for line in lines:
-        if 'AI:' in line:
-            # Extracting the value after 'AI:' by removing the 'AI: ' part
-            parts = line.split('AI: ', 1)
-            if len(parts) > 1:
-                chatbot_value = parts[1].strip()
-                print(chatbot_value)
+    ai_lines = [line.split('AI: ', 1)[-1].strip() for line in lines if 'AI:' in line]
+    
+    # Print and return only unique 'AI:' lines
+    for ai_line in set(ai_lines):
+        print(ai_line)
+        chatbot_value = ai_line
+    
     return chatbot_value
+
 #k=predict("when USA got independence")
 #print(k)
 from flask import Flask, request
