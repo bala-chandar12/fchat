@@ -137,25 +137,28 @@ app = Flask(__name__)
 def hello():
     return 'Hello, welcome to my Flask server!'
 
+
 @app.route('/post_example', methods=['POST'])
 def post_example():
     if request.method == 'POST':
-        # Access the data sent in the POST request
-        data = request.get_json()  # Assuming the data is sent as JSON
-        # You can also use request.form to get form data
-        # data = request.form
+        try:
+            # Ensure that the data is in JSON format
+            data = request.get_json()
+            if not data:
+                raise ValueError("Invalid JSON format")
 
-        # Process the data
-        # For example, if the JSON contains a key 'message'
-        if 'question' in data:
-            received_message = data['question']
-            o=predict(received_message)
-
-            return f"Received message: {o}"
-        else:
-            return "No 'message' key found in the POST request data"
+            # Process the data
+            if 'question' in data:
+                received_message = data['question']
+                o = predict(received_message)
+                return jsonify({"received_message": received_message, "response": o})
+            else:
+                return jsonify({"error": "No 'question' key found in the JSON data"})
+        except Exception as e:
+            return jsonify({"error": str(e)})
     else:
-        return "This endpoint only accepts POST requests"
+        return jsonify({"error": "This endpoint only accepts POST requests"})
+
 
 # if __name__ == '__main__':
 #    app.run(debug=True)
