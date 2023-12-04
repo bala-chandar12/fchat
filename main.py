@@ -1,3 +1,4 @@
+import os
 import together
 from langchain.chains.conversation.memory import ConversationSummaryMemory
 from langchain.chains import ConversationChain
