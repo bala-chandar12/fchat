@@ -13,8 +13,6 @@ from langchain.llms.base import LLM
 from langchain.llms.utils import enforce_stop_tokens
 from langchain.utils import get_from_dict_or_env
 
-from flask import Flask, request, jsonify
-
 import together
 
 import logging
@@ -71,17 +69,17 @@ class TogetherLLM(LLM):
                                           model=self.model,
                                           max_tokens=self.max_tokens,
                                           temperature=self.temperature,
-                                          stop=["","Human:"],
+                                          stop=["<|im_end|>","Human:" ],
                                           )
         text = output['output']['choices'][0]['text']
         return text
 
 llm = TogetherLLM(
-    model='Open-Orca/Mistral-7B-OpenOrca',
-    temperature=0.9,
-    max_tokens=624
-)
+    model= 'Open-Orca/Mistral-7B-OpenOrca',
+    temperature = 0.9,
 
+    max_tokens = 624
+)
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import (
     ChatPromptTemplate,
@@ -91,6 +89,7 @@ from langchain.prompts import (
 )
 from langchain.chains import LLMChain
 from langchain.memory import ConversationBufferMemory
+
 
 llm = llm
 prompt = ChatPromptTemplate(
@@ -103,7 +102,6 @@ prompt = ChatPromptTemplate(
         HumanMessagePromptTemplate.from_template("{question}")
     ]
 )
-
 # Notice that we `return_messages=True` to fit into the MessagesPlaceholder
 # Notice that `"chat_history"` aligns with the MessagesPlaceholder name.
 memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
@@ -113,27 +111,25 @@ conversation = LLMChain(
     verbose=True,
     memory=memory
 )
-
-# m=conversation.predict(question="how are you today")
-# print(m)
-
+#m=conversation.predict(question="how are you today")
+#print(m)
 def res():
     memory.clear()
-
 def predict(que):
-    k = conversation.predict(question=que)
+    k= conversation.predict(question=que)
     print(k)
     lines = k.split('\n')
-    chatbot_value = k  # Default to the full response if 'AI:' is not found
+    chatbot_value=k
     for line in lines:
         if 'AI:' in line:
-            # Extracting the value after 'AI:' by removing the 'AI: ' part
-            chatbot_value = line.split('AI: ', 1)[-1].strip()
+            # Extracting the value after 'Chatbot:' by removing the 'Chatbot: ' part
+            chatbot_value = line.split('AI: ')[1].strip()
             print(chatbot_value)
     return chatbot_value
+#k=predict("when USA got independence")
+#print(k)
+from flask import Flask, request
 
-# k=predict("when USA got independence")
-# print(k)
 
 app = Flask(__name__)
 
@@ -144,23 +140,24 @@ def hello():
 @app.route('/post_example', methods=['POST'])
 def post_example():
     if request.method == 'POST':
-        try:
-            # Ensure that the data is in JSON format
-            data = request.get_json()
-            if not data:
-                raise ValueError("Invalid JSON format")
+        # Access the data sent in the POST request
+        data = request.get_json()  # Assuming the data is sent as JSON
+        # You can also use request.form to get form data
+        # data = request.form
 
-            # Process the data
-            if 'question' in data:
-                received_message = data['question']
-                o = predict(received_message)
-                return jsonify({"received_message": received_message, "response": o})
-            else:
-                return jsonify({"error": "No 'question' key found in the JSON data"})
-        except Exception as e:
-            return jsonify({"error": str(e)})
+        # Process the data
+        # For example, if the JSON contains a key 'message'
+        if 'question' in data:
+            received_message = data['question']
+            o=predict(received_message)
+
+            return f"Received message: {o}"
+        else:
+            return "No 'message' key found in the POST request data"
     else:
-        return jsonify({"error": "This endpoint only accepts POST requests"})
+        return "This endpoint only accepts POST requests"
 
+# if __name__ == '__main__':
+#    app.run(debug=True)
 if __name__ == '__main__':
     app.run(debug=True, port=os.getenv("PORT", default=5000))
