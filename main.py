@@ -1,3 +1,6 @@
+from flask import Flask, jsonify
+import os
+
 import together
 from langchain.chains.conversation.memory import ConversationSummaryMemory
 from langchain.chains import ConversationChain
@@ -157,4 +160,4 @@ def post_example():
         return "This endpoint only accepts POST requests"
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=os.getenv("PORT", default=5000))
