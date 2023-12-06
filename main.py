@@ -1,8 +1,6 @@
-from flask import Flask, jsonify
-import os
-
 import together
 from langchain.chains.conversation.memory import ConversationSummaryMemory
+from langchain.chains.conversation.memory import ConversationKGMemory
 from langchain.chains import ConversationChain
 from langchain.prompts.prompt import PromptTemplate
 import logging
@@ -26,7 +24,8 @@ from langchain.callbacks.manager import CallbackManagerForLLMRun
 from langchain.llms.base import LLM
 from langchain.llms.utils import enforce_stop_tokens
 from langchain.utils import get_from_dict_or_env
-
+from flask import Flask, jsonify
+import os
 class TogetherLLM(LLM):
     """Together large language models."""
 
@@ -75,7 +74,20 @@ class TogetherLLM(LLM):
                                           )
         text = output['output']['choices'][0]['text']
         return text
+        
+template = """The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. 
+If the AI does not know the answer to a question, it truthfully says it does not know. The AI ONLY uses information contained in the "Relevant Information" section and does not hallucinate.
 
+Relevant Information:
+
+{history}
+
+Conversation:
+Human: {input}
+AI:"""
+prompt = PromptTemplate(
+    input_variables=["history", "input"], template=template
+)
 llm = TogetherLLM(
     model= 'Open-Orca/Mistral-7B-OpenOrca',
     temperature = 0.9,
@@ -94,19 +106,10 @@ from langchain.memory import ConversationBufferMemory
 
 
 llm = llm
-prompt = ChatPromptTemplate(
-    messages=[
-        SystemMessagePromptTemplate.from_template(
-            "You are a nice chatbot having a conversation with a human."
-        ),
-        # The `variable_name` here is what must align with memory
-        MessagesPlaceholder(variable_name="chat_history"),
-        HumanMessagePromptTemplate.from_template("{question}")
-    ]
-)
 # Notice that we `return_messages=True` to fit into the MessagesPlaceholder
 # Notice that `"chat_history"` aligns with the MessagesPlaceholder name.
-memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+#memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+memory=ConversationKGMemory(llm=llm)
 conversation = LLMChain(
     llm=llm,
     prompt=prompt,
@@ -118,7 +121,7 @@ conversation = LLMChain(
 def res():
     memory.clear()
 def predict(que):
-    k= conversation.predict(question=que)
+    k= conversation.predict(input=que)
     print(k)
     lines = k.split('\n')
     chatbot_value=k
@@ -137,7 +140,8 @@ app = Flask(__name__)
 
 @app.route('/')
 def hello():
-    return 'Hello, welcome to my Flask server!'
+    return jsonify({"Received message": 'Hello, welcome to my Flask server!'})
+    
 
 @app.route('/post_example', methods=['POST'])
 def post_example():
@@ -153,7 +157,8 @@ def post_example():
             received_message = data['question']
             o=predict(received_message)
 
-            return f"Received message: {o}"
+            #return f"Received message: {o}"
+            return jsonify({"Received message": o})
         else:
             return "No 'message' key found in the POST request data"
     else:
