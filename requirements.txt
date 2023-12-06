@@ -2,3 +2,4 @@ together==0.2.7
 Flask==3.0.0
 langchain==0.0.345
 pydantic==1.10.9
+networkx==3.2.1
